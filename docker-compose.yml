@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  migrate:
+    build: .
+    command: go run internal/migrate/main.go
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    depends_on:
+      - db
+    env_file:
+      - .env
+  seed:
+    build: .
+    command: go run internal/seed/main.go
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    depends_on:
+      - db
+    env_file:
+      - .env
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=db
+      - DB_USER=myuser
+      - DB_PASSWORD=mypassword
+      - DB_NAME=mydb
+      - DB_PORT=5432
+      - JWT_SECRET=clycWKIscPmfGcIMjqIZSuyUgAZ4d6Foxeln66SZOGw=
+      - PORT=8080
+    env_file:
+      - .env
+    restart: on-failure
+volumes:
+  pgdata:
